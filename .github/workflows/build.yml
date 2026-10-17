@@ -1,7 +1,5 @@
 name: Build
 
-# Etiket (v2.0.0 gibi) push edildiginde veya elle (Actions sekmesi) tetiklendiginde
-# Windows (portable .exe) ve Linux (.deb, .rpm, AppImage) paketlerini uretir.
 on:
   push:
     tags:
@@ -10,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   windows:
@@ -31,7 +30,6 @@ jobs:
 
   linux:
     runs-on: ubuntu-latest
-    # Resmi electron-builder imaji: deb/rpm/AppImage icin gereken tum araclar hazir.
     container:
       image: electronuserland/builder:latest
     strategy:
@@ -43,7 +41,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Build Linux (${{ matrix.target }})
-        run: npx electron-builder --linux ${{ matrix.target }}
+        shell: bash
+        run: |
+          set -o pipefail
+          npx electron-builder --linux ${{ matrix.target }} 2>&1 | tee build-${{ matrix.target }}.log
+      - name: Report failure (loglari issue'ya yaz)
+        if: failure()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          { echo '### electron-builder cikti'; echo '```'; tail -c 12000 build-${{ matrix.target }}.log; echo '```'; } > body.md
+          gh issue create --title "ci-log-${{ matrix.target }}-${{ github.run_id }}" --body-file body.md || true
       - name: Upload artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -57,7 +66,6 @@ jobs:
 
   release:
     needs: [windows, linux]
-    # Linux basarisiz olsa bile (windows varsa) release yine de yayinlanir.
     if: ${{ always() && startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     steps:
