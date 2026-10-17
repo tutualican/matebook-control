@@ -13,17 +13,18 @@ if (-not $admin) {
     exit 1
 }
 
-$obj = Get-WmiObject -Namespace 'root\WMI' -Class 'OemWMIMethod' | Select-Object -First 1
+$obj = Get-CimInstance -Namespace 'root\WMI' -ClassName 'OemWMIMethod' | Select-Object -First 1
 if ($null -eq $obj) { Write-Host 'HATA: OemWMIMethod bulunamadi.' -ForegroundColor Red; exit 1 }
 Write-Host "OemWMIMethod: $($obj.InstanceName)" -ForegroundColor Green
 
+# Not: Get-WmiObject + GetMethodParameters + InvokeMethod, PowerShell 5.1'de 64 baytlik u8Input
+# atanirken "System.Management.Automation.PSObject ... System.Array" hatasi verir. CIM yolu kullanilir.
 function Wmi([byte[]]$cmd) {
     $full = New-Object 'byte[]' 64
     $n = [Math]::Min($cmd.Length, 64)
     for ($i = 0; $i -lt $n; $i++) { $full[$i] = $cmd[$i] }
-    $p = $obj.GetMethodParameters('OemWMIfun')
-    $p['u8Input'] = $full
-    return $obj.InvokeMethod('OemWMIfun', $p, $null)['u8Output']
+    $r = Invoke-CimMethod -InputObject $obj -MethodName 'OemWMIfun' -Arguments @{ u8Input = $full }
+    return $r.u8Output
 }
 function Hx([byte[]]$o, $n = 8) { (($o[0..([Math]::Min($n, $o.Length - 1))] | ForEach-Object { $_.ToString('X2') }) -join ' ') }
 

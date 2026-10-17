@@ -44,7 +44,7 @@
 
       <div class="side-foot">
         <div class="pill-platform" id="platform-pill">—</div>
-        <div class="ver">v2.0.4</div>
+        <div class="ver">v2.0.5</div>
       </div>
       <div class="credit">✦ <b>Alican Tutu</b></div>
     </aside>
@@ -182,15 +182,20 @@
             </ul>
           </div>
 
-          <div class="section-title win-only">Ses Sürücüsü</div>
+          <div class="section-title">Ses Sürücüsü</div>
           <div class="card win-only">
-            <h2>Güncelleme</h2>
-            <p class="muted small">Kurulumdan önce geri yükleme noktası oluşturulur, ardından Huawei'nin resmi güncelleyicisi çalıştırılır.</p>
+            <h2>Denetim / Güncelleme (Windows)</h2>
+            <p class="muted small">Kurulu ses sürücüsü tespit edilir; resmi olarak daha yeni bir sürüm varsa önce <b>sistem geri yükleme noktası</b> oluşturulur, ardından Huawei'nin resmi güncelleme kanalı (PC Manager OTA) açılır. PC Manager kurulu değilse Huawei destek sitesi açılır.</p>
             <div class="btn-row">
-              <button class="btn primary" id="audio-run">Ses Sürücüsünü Güncelle</button>
+              <button class="btn primary" id="audio-run">Ses Sürücüsünü Denetle / Güncelle</button>
               <button class="btn ghost" id="audio-script">Script Yolunu Aç</button>
             </div>
             <pre class="raw-out" id="audio-out">—</pre>
+          </div>
+          <div class="card linux-only">
+            <h2>Ses sürücüsü (Linux)</h2>
+            <p class="muted small">Linux'ta MateBook ses donanımı çekirdek sürücüleriyle çalışır (Intel SOF/SST — <code>snd_sof_pci_intel_tgl</code>, ALSA/PipeWire). Huawei'nin OTA güncelleyicisi gerekmez.</p>
+            <p class="muted small">Sürücü güncellemeleri dağıtımın <code>linux-firmware</code> ve çekirdek paketleriyle, aygıt yazılımı <code>fwupd</code> ile gelir. Ayrıntı: <b>docs/LINUX.md</b>.</p>
           </div>
         </div>
       </section>

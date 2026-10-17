@@ -3,6 +3,28 @@
 All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [2.0.5] — 2026
+
+### Changed
+- **Audio-driver step is now portable and model-agnostic.** The “Ses Sürücüsü” action used to rely
+  on a script hard-coded to the original author's home folder (`~/huawei-re/AudioDriverStage.ps1`).
+  It now ships **inside the app** and runs from the bundled `scripts/AudioDriverStage.ps1` (resolved
+  through the same asar → `app.asar.unpacked` logic as the WMI worker), so it works on any machine.
+  The script detects the installed audio driver, checks Huawei's **official** driver channel
+  (support-site offering API + PC Manager HOTA data), creates a **System Restore point only if an
+  update is actually available**, then opens Huawei's official updater (or the support page).
+
+### Fixed
+- **`scripts/verify.ps1`** (the manual ACPI-WMI check tool) used the same broken
+  `Get-WmiObject` + `InvokeMethod` path that v2.0.3 replaced in the app worker, so it errored out on
+  PowerShell 5.1. It now uses `Get-CimInstance` + `Invoke-CimMethod` too.
+
+### Added
+- **Linux audio note.** The “Ses Sürücüsü” section now shows a Linux counterpart explaining that
+  MateBook audio runs through standard kernel drivers (Intel SOF/SST, ALSA/PipeWire) and that updates
+  come via `linux-firmware`/kernel packages and `fwupd` — no Huawei OTA needed. Documented in
+  `docs/LINUX.md`.
+
 ## [2.0.4] — 2026
 
 ### Added

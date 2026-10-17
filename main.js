@@ -67,6 +67,17 @@ function hasHuaweiOsd() {
   return HWOSD_PATHS.some((p) => { try { return fs.existsSync(p); } catch { return false; } });
 }
 
+// Packaged uygulamada scripts/ app.asar ICINDE olamaz (PowerShell calistiramaz).
+// asar yolu gorulunce her zaman app.asar.unpacked surumunu tercih et.
+function scriptsDir() {
+  let base = path.join(__dirname, 'scripts');
+  if (base.includes('app.asar')) {
+    const unpacked = base.replace(/app\.asar([\\/])/, 'app.asar.unpacked$1');
+    if (fs.existsSync(unpacked)) base = unpacked;
+  }
+  return base;
+}
+
 let osdWin = null;
 let osdTimer = null;
 
@@ -228,25 +239,24 @@ ipcMain.handle('hw:applyFull', async (_, name, opts) => {
 
 // ---- ses surucusu asamasi (yalnizca Windows) ----
 ipcMain.handle('audio:run', async () => {
-  if (process.platform !== 'win32') return { ok: false, error: 'Ses guncellemesi yalnizca Windows icin' };
-  const script = path.join(require('os').homedir(), 'huawei-re', 'AudioDriverStage.ps1');
-  if (!require('fs').existsSync(script)) {
+  if (process.platform !== 'win32') return { ok: false, error: 'Ses surucusu asamasi yalnizca Windows icin gecerlidir.' };
+  const script = path.join(scriptsDir(), 'AudioDriverStage.ps1');
+  if (!fs.existsSync(script)) {
     return { ok: false, error: 'AudioDriverStage.ps1 bulunamadi: ' + script };
   }
   return new Promise((resolve) => {
     const ps = `Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File','${script.replace(/'/g, "''")}'`;
     execFile('powershell.exe', ['-NoProfile', '-Command', ps], (err) => {
       if (err) resolve({ ok: false, error: String(err.message) });
-      else resolve({ ok: true, message: 'Ses surucusu asamasi yonetici olarak baslatildi. Geri yukleme noktasi olusturulacak.' });
+      else resolve({ ok: true, message: 'Ses surucusu asamasi yonetici olarak baslatildi. Once geri yukleme noktasi olusturulur, sonra Huawei resmi kanali acilir.' });
     });
   });
 });
 
 ipcMain.handle('audio:reveal', async () => {
-  const dir = path.join(require('os').homedir(), 'huawei-re');
-  const script = path.join(dir, 'AudioDriverStage.ps1');
-  if (require('fs').existsSync(script)) shell.showItemInFolder(script);
-  else shell.openPath(dir);
+  const script = path.join(scriptsDir(), 'AudioDriverStage.ps1');
+  if (fs.existsSync(script)) shell.showItemInFolder(script);
+  else shell.openPath(scriptsDir());
   return { ok: true };
 });
 

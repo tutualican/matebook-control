@@ -92,6 +92,29 @@ echo 80 | sudo tee /sys/class/power_supply/BAT*/charge_control_end_threshold
 Cihaz (BOD-WXX9) için modül quirk tablosunda yoksa Fn/şarj özellikleri görünmeyebilir;
 bu durumda arayüz bunları otomatik gizler. Çekirdek modülü `huawei-wmi` için güncel çekirdek kullanın.
 
+## Ses sürücüsü (Linux)
+
+Windows'taki "Ses Sürücüsü" aşaması Huawei'nin PC Manager OTA kanalına dayanır ve **yalnızca Windows**
+içindir (arayüzde Windows'ta görünür, Linux'ta yerine bu not gösterilir). Linux'ta Huawei güncelleyicisi
+**gerekmez**:
+
+- Ses donanımı (ES8336 codec) çekirdek sürücüleriyle çalışır: **Intel SOF/SST** (`snd_sof_pci_intel_tgl`)
+  veya `snd_hda_intel`, üzerinde **ALSA / PipeWire**.
+- Kontrol:
+  ```bash
+  aplay -l                 # kartlar
+  pactl info               # PipeWire/PulseAudio
+  dmesg | grep -i -E 'sof|sst'   # kodek yüklenmesi
+  ```
+- Sürücü/firmware güncellemesi dağıtımın **`linux-firmware`** + **çekirdek** paketleriyle gelir:
+  ```bash
+  sudo apt update && sudo apt install --reinstall linux-firmware   # Debian/Ubuntu
+  sudo dnf update linux-firmware                                   # Fedora
+  fwupdmgr get-updates && fwupdmgr update                          # BIOS/aygıt yazılımı
+  ```
+- Sessiz hoparlör/mikrofon sorunları genelde çekirdek sürümüyle çözülür; gerekirse
+  `snd_sof_pci_intel_tgl` parametreleri veya ALSA ince ayarı kullanılır.
+
 ## Elle doğrulama
 
 ```bash
