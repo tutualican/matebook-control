@@ -125,10 +125,18 @@ async function psJson(script) {
 async function systemInfo() {
   const script = `
 $ErrorActionPreference='SilentlyContinue'
+# Node cikisi utf8 okur; JSON'u her zaman utf8 yaz.
+$utf8 = New-Object System.Text.UTF8Encoding($false)
+[Console]::OutputEncoding = $utf8
+# powercfg ciktisini DOGRU cozmek icin gecici olarak OEM kod sayfasini kullan (ör. 857),
+# sonra utf8'e geri don ki Turkce karakterler ("Güç tasarrufu") bozulmasin.
+$oemCp = [System.Globalization.CultureInfo]::CurrentCulture.TextInfo.OEMCodePage
+[Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding($oemCp)
+$plan = (powercfg /getactivescheme) 2>$null
+[Console]::OutputEncoding = $utf8
 $batt = Get-CimInstance Win32_Battery | Select-Object -First 1
 $bs = Get-CimInstance -Namespace root/WMI -ClassName BatteryStatus | Select-Object -First 1
 $cpu = Get-CimInstance Win32_Processor | Select-Object -First 1
-$plan = (powercfg /getactivescheme) 2>$null
 $obj = [ordered]@{
   batteryStatus = if($batt){[int]$batt.BatteryStatus}else{$null}
   batteryPct    = if($batt){[int]$batt.EstimatedChargeRemaining}else{$null}

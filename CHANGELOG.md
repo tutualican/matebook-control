@@ -3,6 +3,20 @@
 All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [2.0.3] — 2026
+
+### Fixed
+- **ACPI-WMI now really works in the packaged app.** The persistent PowerShell worker used
+  `Get-WmiObject` + `GetMethodParameters` + `InvokeMethod`. On PowerShell 5.1 that path fails
+  while assigning the 64-byte `u8Input` array with
+  `'System.Management.Automation.PSObject' cannot be converted to 'System.Array'`, so every
+  command (mode, fan, temperature, smart charge) errored out even as administrator.
+  The worker now uses `Get-CimInstance` + `Invoke-CimMethod` — verified end-to-end as admin:
+  working mode, fan RPM, sensor temperature and smart-charge status all read back correctly.
+- **Turkish characters in the active power-plan name** (e.g. “Güç tasarrufu”) no longer show up
+  as `(G? tasarrufu)`. `powercfg` output is now decoded with the machine's OEM code page and
+  re-emitted to the app as UTF-8.
+
 ## [2.0.2] — 2026
 
 ### Fixed
