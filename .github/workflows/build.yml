@@ -30,28 +30,29 @@ jobs:
 
   linux:
     runs-on: ubuntu-latest
-    container:
-      image: electronuserland/builder:latest
     strategy:
       fail-fast: false
       matrix:
         target: [deb, rpm, AppImage]
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fakeroot rpm
       - name: Install dependencies
         run: npm ci
       - name: Build Linux (${{ matrix.target }})
-        shell: bash
-        run: |
-          set -o pipefail
-          npx electron-builder --linux ${{ matrix.target }} 2>&1 | tee build-${{ matrix.target }}.log
-      - name: Report failure (loglari issue'ya yaz)
+        run: npx electron-builder --linux ${{ matrix.target }} 2>&1 | tee build.log
+      - name: Report failure (logu issue'ya yaz)
         if: failure()
-        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          { echo '### electron-builder cikti'; echo '```'; tail -c 12000 build-${{ matrix.target }}.log; echo '```'; } > body.md
+          { echo "electron-builder --linux ${{ matrix.target }} cikti"; echo '```'; tail -c 12000 build.log; echo '```'; } > body.md
           gh issue create --title "ci-log-${{ matrix.target }}-${{ github.run_id }}" --body-file body.md || true
       - name: Upload artifact
         if: always()
