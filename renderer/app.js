@@ -21,6 +21,18 @@ let booted = false;
 let currentMode = null;     // son uygulanan çalışma modu (0/1/2)
 let lastAc = null;          // son bilinen AC durumu
 let applying = false;
+let ENV = null;             // ortam bilgisi (hwOsd var mı vb.)
+
+// Kendi bilgi kartımız (OSD). Huawei HW OSD kuruluysa onunki kullanılır, çift kart olmaz.
+function showCard(title, subtitle, accent, icon) {
+  if (!ENV || !ENV.isWindows || ENV.hwOsd) return;
+  try { window.mb.osd({ title, subtitle, accent, icon }); } catch {}
+}
+const CARD_BY_MODE = {
+  perf:     { title: 'Performans moduna geçildi', subtitle: 'İşlemci yüksek güce alındı', accent: '#ff6b3d', icon: '⚡' },
+  balanced: { title: 'Dengeli moda geçildi',       subtitle: 'Normal güç profili',          accent: '#4da3ff', icon: '⚖' },
+  eco:      { title: 'Enerji tasarrufu moduna geçildi', subtitle: 'Pil ömrü öncelikli',    accent: '#37c977', icon: '🍃' },
+};
 
 const store = {
   get: (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
@@ -214,6 +226,8 @@ async function applyFull(name, btn) {
     currentMode = { balanced: 0, perf: 1, eco: 2 }[name];
     store.set('mb.lastProfile', name);
     log('Tamam: ' + (r.steps || []).join(' • '));
+    const c = CARD_BY_MODE[name];
+    if (c) showCard(c.title, c.subtitle, c.accent, c.icon);
     if (btn) { btn.classList.add('done'); btn.textContent = '✓ Uygulandı'; setTimeout(() => { btn.classList.remove('done'); btn.disabled = false; btn.textContent = b0; }, 1500); }
   } else {
     log('Hata: ' + (r.error || (r.errors && r.errors.join('; ')) || 'bilinmiyor'));
@@ -228,8 +242,13 @@ $$('.mode-btn').forEach((b) => b.addEventListener('click', () => applyFull(b.dat
 
 // ---------------- Turbo ----------------
 $('#perf-turbo').addEventListener('change', async (e) => {
-  const r = await window.mb.setTurbo(e.target.checked);
-  log(r.ok ? ('Turbo: ' + (e.target.checked ? 'açık' : 'kapalı')) : ('Turbo hatası: ' + r.error));
+  const on = e.target.checked;
+  const r = await window.mb.setTurbo(on);
+  log(r.ok ? ('Turbo: ' + (on ? 'açık' : 'kapalı')) : ('Turbo hatası: ' + r.error));
+  if (r.ok) {
+    if (on) showCard('Turbo açık', 'Yüksek güç etkin', '#ff6b3d', '⚡');
+    else showCard('Turbo kapalı', 'Normal güç', '#4da3ff', '🌙');
+  }
   refresh();
 });
 
@@ -319,6 +338,7 @@ $('#admin-skip').onclick = () => $('#admin-overlay').classList.add('hidden');
 async function boot() {
   setForceDc(store.get('mb.forceDc', '0') === '1');
   const env = await window.mb.env();
+  ENV = env;
   document.body.classList.toggle('is-linux', !env.isWindows);
   $('#platform-pill').textContent = env.isWindows ? 'WINDOWS' : 'LINUX';
   log('Platform: ' + env.platform + ' • ' + env.arch);

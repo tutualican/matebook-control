@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('mb', {
   raw: (hex) => ipcRenderer.invoke('hw:raw', hex),
   profile: (name) => ipcRenderer.invoke('hw:profile', name),
   applyFull: (name, opts) => ipcRenderer.invoke('hw:applyFull', name, opts || {}),
+  osd: (p) => ipcRenderer.invoke('osd:show', p || {}),
 
   relaunchAdmin: () => ipcRenderer.invoke('app:relaunchAdmin'),
 

@@ -3,6 +3,20 @@
 All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [2.0.4] — 2026
+
+### Added
+- **Own on-screen info card (OSD).** The “Switched to Performance/Balanced mode” card in Huawei
+  PC Manager comes from Huawei's separate **HW OSD** component, which many machines don't have.
+  MateBook Kontrol now draws its own frameless, click-through card in the bottom-right corner on
+  every mode change — but **only when Huawei's HW OSD is not installed**, so there are no double
+  cards. This makes the feedback identical on any machine, with no Huawei software required.
+
+### Fixed
+- **Balanced and Eco now update the Turbo state too** (`SET_TURBO 0`). Previously only Performance
+  sent a Turbo command, so the Huawei OSD (when present) only showed the card for Performance.
+  Now the proper “Switched to Balanced mode” card appears as well — matching Huawei PC Manager.
+
 ## [2.0.3] — 2026
 
 ### Fixed

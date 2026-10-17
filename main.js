@@ -2,8 +2,9 @@
 // MateBook Kontrol — eser sahibi: Alican Tutu  (mbk-alican-tutu)
 // Bu proje Alican Tutu'ya aittir.
 // ════════════════════════════════════════════════════════════
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, screen } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { execFile } = require('child_process');
 
 const hw = process.platform === 'win32'
@@ -42,7 +43,67 @@ function createWindow() {
     }
   });
   win.webContents.on('render-process-gone', (_e, d) => console.log('RENDER GONE ' + JSON.stringify(d)));
-  win.webContents.on('console-message', (_e, _l, m) => console.log('RENDER LOG ' + m));
+  win.webContents.on('console-message', (e, _level, message) => {
+    console.log('RENDER LOG ' + (e && e.message !== undefined ? e.message : message));
+  });
+  win.on('closed', () => {
+    if (osdWin && !osdWin.isDestroyed()) { try { osdWin.destroy(); } catch {} }
+    win = null;
+  });
+}
+
+// ────────────────────────────────────────────────────────────
+// Kendi bilgi kartı (OSD) — Huawei HW OSD yoksa devreye girer
+// ────────────────────────────────────────────────────────────
+// Huawei PC Manager'ın "Performans/Dengeli moda geçildi" kartı HW OSD bileşeninden gelir.
+// HW OSD kurulu OLMAYAN cihazlarda aynı hissi vermek için kendi şeffaf, tıklama-geçirgen
+// üst penceremizi gösteriyoruz. (HW OSD varsa onunki kullanılır; çift kart olmaz.)
+const HWOSD_PATHS = [
+  'C:\\Program Files\\Huawei\\Huawei OSD\\OSD_Daemon.exe',
+  'C:\\Program Files (x86)\\Huawei\\Huawei OSD\\OSD_Daemon.exe',
+];
+function hasHuaweiOsd() {
+  if (process.platform !== 'win32') return false;
+  return HWOSD_PATHS.some((p) => { try { return fs.existsSync(p); } catch { return false; } });
+}
+
+let osdWin = null;
+let osdTimer = null;
+
+function ensureOsd() {
+  if (osdWin && !osdWin.isDestroyed()) return osdWin;
+  osdWin = new BrowserWindow({
+    width: 372, height: 104, frame: false, transparent: true, resizable: false,
+    movable: false, minimizable: false, maximizable: false, fullscreenable: false,
+    skipTaskbar: true, alwaysOnTop: true, focusable: false, show: false, hasShadow: false,
+    webPreferences: { contextIsolation: true, nodeIntegration: false },
+  });
+  try { osdWin.setIgnoreMouseEvents(true, { forward: true }); } catch {}
+  osdWin.loadFile(path.join(__dirname, 'renderer', 'osd.html'));
+  return osdWin;
+}
+
+function showOsd(payload = {}) {
+  if (process.platform !== 'win32') return;
+  const w = ensureOsd();
+  try {
+    const wa = screen.getPrimaryDisplay().workAreaSize;
+    const W = 372, H = 104, M = 24;
+    w.setBounds({ x: wa.width - W - M, y: wa.height - H - M, width: W, height: H });
+  } catch {}
+  const data = {
+    title: payload.title || '',
+    subtitle: payload.subtitle || '',
+    accent: payload.accent || '#f5a623',
+    icon: payload.icon || '',
+  };
+  const js = `window.__osd && window.__osd(${JSON.stringify(data)})`;
+  const paint = () => { try { w.webContents.executeJavaScript(js).catch(() => {}); } catch {} };
+  if (w.webContents.isLoading()) w.webContents.once('did-finish-load', paint);
+  else paint();
+  try { w.showInactive(); } catch {}
+  if (osdTimer) clearTimeout(osdTimer);
+  osdTimer = setTimeout(() => { if (osdWin && !osdWin.isDestroyed()) { try { osdWin.hide(); } catch {} } }, 2800);
 }
 
 app.whenReady().then(() => {
@@ -70,7 +131,11 @@ ipcMain.handle('env', () => ({
   arch: process.arch,
   fancy: hw.caps(),
   isWindows: process.platform === 'win32',
+  hwOsd: hasHuaweiOsd(),
 }));
+
+// ---- kendi bilgi kartı (OSD) ----
+ipcMain.handle('osd:show', (_, p) => { showOsd(p || {}); return { ok: true }; });
 
 // ---- baslatma ----
 ipcMain.handle('hw:init', async () => {

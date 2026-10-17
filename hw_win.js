@@ -334,10 +334,12 @@ module.exports = {
       steps.push('Performance-Mode → ' + PERF_MAP[name]);
     } catch (e) { errors.push('Performance-Mode: ' + (e.message || e)); }
 
-    // 3) Turbo — performans için AC'den bağımsız aç (PC Manager kapısı atlanır)
+    // 3) Turbo — performans için AC'den bağımsız aç; dengeli/eko'da kapat.
+    //    NOT: Huawei HW OSD servisi turbo değişimini dinlediği için, dengeli/eko'da da
+    //    SET_TURBO gönderiyoruz; böylece "Dengeli moda geçildi" kartı da çıkar (PC Manager gibi).
     try {
       if (name === 'perf') { await invoke(CMD.SET_TURBO(true)); steps.push('Turbo (yüksek güç) → açık' + (forceDc ? ' [pil dahil]' : '')); }
-      else if (name === 'eco') { await invoke(CMD.SET_TURBO(false)); steps.push('Turbo → kapalı'); }
+      else { await invoke(CMD.SET_TURBO(false)); steps.push('Turbo → kapalı'); }
     } catch (e) { errors.push('Turbo: ' + (e.message || e)); }
 
     // 4) Windows güç planı + işlemci ayarları
