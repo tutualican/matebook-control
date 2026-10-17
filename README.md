@@ -3,6 +3,7 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-blue)](#)
 [![Electron](https://img.shields.io/badge/Electron-44-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/tutualican/matebook-control)](https://github.com/tutualican/matebook-control/releases/latest)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](#contributing)
 
 An open-source control center for **Huawei MateBook** laptops that works **without
@@ -23,7 +24,7 @@ battery charging — with a small, modern UI.
 
 **Option 1 — Ready-made app (easiest):**
 1. Open **[Releases](https://github.com/tutualican/matebook-control/releases/latest)**.
-2. Windows: download **`MateBook Kontrol 2.0.0.exe`** and double-click it.
+2. Windows: download **`MateBook.Kontrol.2.0.0.exe`** and double-click it.
    Linux: download the **`.deb`** / **`.rpm`** / **`.AppImage`**.
 3. Accept the **administrator / root** prompt when asked. That's it.
 
@@ -33,7 +34,7 @@ Install [Node.js](https://nodejs.org) once, then double-click **`run-windows.cmd
 installs dependencies for you.
 
 > 🇹🇷 **Türkçe:** En kolay yol → [Releases](https://github.com/tutualican/matebook-control/releases/latest) sayfasından
-> `MateBook Kontrol 2.0.0.exe` dosyasını indirip çift tıklayın; yönetici izni sorusuna **Evet** deyin.
+> `MateBook.Kontrol.2.0.0.exe` dosyasını indirip çift tıklayın; yönetici izni sorusuna **Evet** deyin.
 > Kaynaktan çalıştırmak için Node.js kurulu bir bilgisayarda **`run-windows.cmd`** dosyasına çift tıklamanız yeterli —
 > gerekirse yönetici iznini ve bağımlılıkları kendisi halleder.
 
