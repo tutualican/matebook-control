@@ -71,6 +71,8 @@ function startWorker(workerPath) {
     proc.stderr.on('data', () => {});
     proc.on('exit', () => {
       proc = null;
+      // READY gelmeden kapanirsa init() sonsuza kadar beklemesin.
+      if (readyResolve) { readyResolve({ ok: false, msg: 'ACPI-WMI çalışanı başlatılamadı (script yolu/izin?)' }); readyResolve = null; }
       const q = queue; queue = [];
       q.forEach((cb) => cb('ERR ACPI-WMI çalışanı kapandı'));
     });
@@ -265,7 +267,16 @@ module.exports = {
   async init(ctx) {
     const admin = await isAdmin();
     if (!admin) return { ok: false, needAdmin: true, msg: 'Yönetici izni yok — ACPI-WMI için gerekli.' };
-    const worker = path.join(ctx.appPath, 'scripts', 'wmi_worker.ps1');
+    const fs = require('fs');
+    let worker = path.join(ctx.appPath, 'scripts', 'wmi_worker.ps1');
+    // Paketlenmis (asar) surumde script'ler app.asar ICINDE calistirilamaz;
+    // electron-builder bunlari 'app.asar.unpacked' klasorune cikarir.
+    if (!fs.existsSync(worker) && worker.includes('app.asar')) {
+      worker = worker.replace(/app\.asar([\\/])/, 'app.asar.unpacked$1');
+    }
+    if (!fs.existsSync(worker)) {
+      return { ok: false, needAdmin: false, msg: 'wmi_worker.ps1 bulunamadı: ' + worker };
+    }
     const r = await startWorker(worker);
     return { ok: r.ok, needAdmin: false, msg: r.msg || (r.ok ? 'ACPI-WMI bağlantısı kuruldu' : 'Bağlantı kurulamadı') };
   },

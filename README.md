@@ -24,7 +24,7 @@ battery charging — with a small, modern UI.
 
 **Option 1 — Ready-made app (easiest):**
 1. Open **[Releases](https://github.com/tutualican/matebook-control/releases/latest)**.
-2. Windows: download **`MateBook.Kontrol.2.0.0.exe`** and double-click it.
+2. Windows: download the latest **`.exe`** and double-click it.
    Linux: download the **`.deb`** / **`.rpm`** / **`.AppImage`**.
 3. Accept the **administrator / root** prompt when asked. That's it.
 
@@ -34,7 +34,7 @@ Install [Node.js](https://nodejs.org) once, then double-click **`run-windows.cmd
 installs dependencies for you.
 
 > 🇹🇷 **Türkçe:** En kolay yol → [Releases](https://github.com/tutualican/matebook-control/releases/latest) sayfasından
-> `MateBook.Kontrol.2.0.0.exe` dosyasını indirip çift tıklayın; yönetici izni sorusuna **Evet** deyin.
+> `MateBook.Kontrol.<sürüm>.exe` dosyasını indirip çift tıklayın; yönetici izni sorusuna **Evet** deyin.
 > Kaynaktan çalıştırmak için Node.js kurulu bir bilgisayarda **`run-windows.cmd`** dosyasına çift tıklamanız yeterli —
 > gerekirse yönetici iznini ve bağımlılıkları kendisi halleder.
 

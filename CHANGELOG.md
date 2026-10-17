@@ -3,6 +3,16 @@
 All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [2.0.1] — 2026
+
+### Fixed
+- **Packaged app could not reach ACPI-WMI.** In the built (asar) app the PowerShell
+  worker was referenced from inside `app.asar`, which PowerShell cannot execute.
+  So every WMI command failed with *"no ACPI-WMI connection (administrator
+  required?)"* **even when running as administrator**. Scripts are now shipped
+  unpacked (`asarUnpack`) and resolved from `app.asar.unpacked` at runtime.
+- `init()` no longer hangs forever if the worker exits before signalling ready.
+
 ## [2.0.0] — 2026
 
 ### Fixed
