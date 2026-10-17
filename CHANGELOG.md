@@ -3,6 +3,16 @@
 All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [2.0.2] — 2026
+
+### Fixed
+- **Packaged app still could not reach ACPI-WMI** (the v2.0.1 fix was incomplete).
+  Electron's asar-aware `fs` reports files **inside `app.asar` as existing**, so the
+  "if the worker is missing, switch to the unpacked path" check never triggered and
+  PowerShell kept being pointed at a file inside `app.asar` that it cannot execute.
+  The worker path is now switched to `app.asar.unpacked` **whenever** it is inside
+  `app.asar`. Verified with a real Electron test that the unpacked path is chosen.
+
 ## [2.0.1] — 2026
 
 ### Fixed

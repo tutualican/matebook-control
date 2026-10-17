@@ -269,10 +269,12 @@ module.exports = {
     if (!admin) return { ok: false, needAdmin: true, msg: 'Yönetici izni yok — ACPI-WMI için gerekli.' };
     const fs = require('fs');
     let worker = path.join(ctx.appPath, 'scripts', 'wmi_worker.ps1');
-    // Paketlenmis (asar) surumde script'ler app.asar ICINDE calistirilamaz;
-    // electron-builder bunlari 'app.asar.unpacked' klasorune cikarir.
-    if (!fs.existsSync(worker) && worker.includes('app.asar')) {
-      worker = worker.replace(/app\.asar([\\/])/, 'app.asar.unpacked$1');
+    // Electron, app.asar icindeki dosyalari VARMIS gibi gosterir (existsSync true doner),
+    // ama PowerShell asar icindeki dosyayi CALISTIRAMAZ. Bu yuzden asar yolu gorulunce
+    // her zaman app.asar.unpacked surumunu tercih et.
+    if (worker.includes('app.asar')) {
+      const unpacked = worker.replace(/app\.asar([\\/])/, 'app.asar.unpacked$1');
+      if (fs.existsSync(unpacked)) worker = unpacked;
     }
     if (!fs.existsSync(worker)) {
       return { ok: false, needAdmin: false, msg: 'wmi_worker.ps1 bulunamadı: ' + worker };
