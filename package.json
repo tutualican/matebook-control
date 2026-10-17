@@ -55,7 +55,9 @@
       "hw_linux.js",
       "renderer/**/*",
       "scripts/**/*",
-      "package.json"
+      "package.json",
+      "LICENSE",
+      "NOTICE"
     ],
     "linux": {
       "target": ["deb", "rpm", "AppImage"],
@@ -64,11 +66,7 @@
       "icon": "build/icon.png",
       "synopsis": "Huawei MateBook control center",
       "description": "Performance, fan and charge control for Huawei MateBook via ACPI platform_profile / cpufreq / huawei-wmi.",
-      "desktop": {
-        "Name": "MateBook Kontrol",
-        "Comment": "Huawei MateBook control center",
-        "Categories": "Utility;System;Settings;HardwareSettings;"
-      }
+      "category": "Utility"
     },
     "deb": {
       "depends": ["bash", "policykit-1 | pkexec", "util-linux"]
