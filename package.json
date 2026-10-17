@@ -1,0 +1,87 @@
+{
+  "name": "matebook-control",
+  "productName": "MateBook Kontrol",
+  "version": "2.0.0",
+  "description": "Control center for Huawei MateBook laptops: performance / fan / charge modes without Huawei PC Manager (Windows ACPI-WMI + Linux).",
+  "main": "main.js",
+  "author": {
+    "name": "Alican Tutu"
+  },
+  "license": "MIT",
+  "private": false,
+  "keywords": [
+    "huawei",
+    "matebook",
+    "acpi",
+    "wmi",
+    "fan-control",
+    "performance",
+    "power-management",
+    "battery",
+    "electron",
+    "windows",
+    "linux"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tutualican/matebook-control.git"
+  },
+  "homepage": "https://github.com/tutualican/matebook-control#readme",
+  "bugs": {
+    "url": "https://github.com/tutualican/matebook-control/issues"
+  },
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win portable",
+    "dist:linux": "electron-builder --linux deb rpm AppImage",
+    "dist:deb": "electron-builder --linux deb",
+    "dist:rpm": "electron-builder --linux rpm",
+    "dist:appimage": "electron-builder --linux AppImage"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^44.8.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.matebook.kontrol",
+    "productName": "MateBook Kontrol",
+    "copyright": "© Alican Tutu",
+    "extraMetadata": { "owner": "Alican Tutu" },
+    "files": [
+      "main.js",
+      "preload.js",
+      "hw_win.js",
+      "hw_linux.js",
+      "renderer/**/*",
+      "scripts/**/*",
+      "package.json"
+    ],
+    "linux": {
+      "target": ["deb", "rpm", "AppImage"],
+      "category": "Utility",
+      "maintainer": "Alican Tutu",
+      "icon": "build/icon.png",
+      "synopsis": "Huawei MateBook control center",
+      "description": "Performance, fan and charge control for Huawei MateBook via ACPI platform_profile / cpufreq / huawei-wmi.",
+      "desktop": {
+        "Name": "MateBook Kontrol",
+        "Comment": "Huawei MateBook control center",
+        "Categories": "Utility;System;Settings;HardwareSettings;"
+      }
+    },
+    "deb": {
+      "depends": ["bash", "policykit-1 | pkexec", "util-linux"]
+    },
+    "rpm": {
+      "depends": ["bash", "polkit", "util-linux"]
+    },
+    "appImage": {
+      "category": "Utility"
+    },
+    "win": {
+      "target": ["portable"],
+      "icon": "build/icon.png"
+    }
+  }
+}

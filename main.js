@@ -1,0 +1,216 @@
+// ════════════════════════════════════════════════════════════
+// MateBook Kontrol — eser sahibi: Alican Tutu  (mbk-alican-tutu)
+// Bu proje Alican Tutu'ya aittir.
+// ════════════════════════════════════════════════════════════
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const path = require('path');
+const { execFile } = require('child_process');
+
+const hw = process.platform === 'win32'
+  ? require('./hw_win')
+  : require('./hw_linux');
+
+let win = null;
+
+function createWindow() {
+  win = new BrowserWindow({
+    width: 1060,
+    height: 720,
+    minWidth: 900,
+    minHeight: 620,
+    frame: false,
+    backgroundColor: '#0b0b0f',
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+  win.once('ready-to-show', () => {
+    win.show();
+    if (process.env.MB_SMOKE === '1') {
+      setTimeout(async () => {
+        try {
+          const info = await win.webContents.executeJavaScript(
+            "document.getElementById('platform-pill').textContent + ' || LOG: ' + document.getElementById('log').textContent + ' || nav=' + document.querySelectorAll('.nav-item').length");
+          console.log('SMOKE OK ' + info);
+        } catch (e) { console.log('SMOKE ERR ' + e.message); }
+        app.quit();
+      }, 2500);
+    }
+  });
+  win.webContents.on('render-process-gone', (_e, d) => console.log('RENDER GONE ' + JSON.stringify(d)));
+  win.webContents.on('console-message', (_e, _l, m) => console.log('RENDER LOG ' + m));
+}
+
+app.whenReady().then(() => {
+  createWindow();
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit();
+});
+
+// ---- pencere kontrolleri ----
+ipcMain.handle('win:minimize', () => win && win.minimize());
+ipcMain.handle('win:maximize', () => {
+  if (!win) return;
+  if (win.isMaximized()) win.unmaximize(); else win.maximize();
+});
+ipcMain.handle('win:close', () => win && win.close());
+
+// ---- ortam bilgisi ----
+ipcMain.handle('env', () => ({
+  platform: process.platform,
+  arch: process.arch,
+  fancy: hw.caps(),
+  isWindows: process.platform === 'win32',
+}));
+
+// ---- baslatma ----
+ipcMain.handle('hw:init', async () => {
+  try {
+    return await hw.init({ appPath: __dirname });
+  } catch (e) {
+    return { ok: false, needAdmin: false, msg: String(e.message || e) };
+  }
+});
+
+ipcMain.handle('hw:status', async () => {
+  try { return { ok: true, data: await hw.status() }; }
+  catch (e) { return { ok: false, error: String(e.message || e) }; }
+});
+
+ipcMain.handle('hw:systemInfo', async () => {
+  try { return { ok: true, data: await hw.systemInfo() }; }
+  catch (e) { return { ok: false, error: String(e.message || e) }; }
+});
+
+ipcMain.handle('hw:socCondition', async () => {
+  try { return { ok: true, data: await hw.socCondition() }; }
+  catch (e) { return { ok: false, error: String(e.message || e) }; }
+});
+
+ipcMain.handle('hw:setMode', async (_, m) => {
+  try { return { ok: true, data: await hw.setMode(m) }; }
+  catch (e) { return { ok: false, error: String(e.message || e) }; }
+});
+
+ipcMain.handle('hw:setPerf', async (_, m) => {
+  try { return { ok: true, data: await hw.setPerf(m) }; }
+  catch (e) { return { ok: false, error: String(e.message || e) }; }
+});
+
+ipcMain.handle('hw:setBoost', async (_, v) => {
+  try { return { ok: true, data: await hw.setBoost(v) }; }
+  catch (e) { return { ok: false, error: String(e.message || e) }; }
+});
+
+ipcMain.handle('hw:setTurbo', async (_, b) => {
+  try { return { ok: true, data: await hw.setTurbo(b) }; }
+  catch (e) { return { ok: false, error: String(e.message || e) }; }
+});
+
+ipcMain.handle('hw:setThermal', async (_, p) => {
+  try { return { ok: true, data: await hw.setThermal(p) }; }
+  catch (e) { return { ok: false, error: String(e.message || e) }; }
+});
+
+ipcMain.handle('hw:setSmartChargeOn', async () => {
+  try { return { ok: true, data: await hw.setSmartChargeOn() }; }
+  catch (e) { return { ok: false, error: String(e.message || e) }; }
+});
+
+ipcMain.handle('hw:setChargeLimit', async (_, c) => {
+  try { return { ok: true, data: await hw.setChargeLimit(c) }; }
+  catch (e) { return { ok: false, error: String(e.message || e) }; }
+});
+
+ipcMain.handle('hw:setChargeThreshold', async (_, lo, hi) => {
+  try { return { ok: true, data: await hw.setChargeThreshold(lo, hi) }; }
+  catch (e) { return { ok: false, error: String(e.message || e) }; }
+});
+
+ipcMain.handle('hw:setResumeCharging', async (_, b) => {
+  try { return { ok: true, data: await hw.setResumeCharging(b) }; }
+  catch (e) { return { ok: false, error: String(e.message || e) }; }
+});
+
+ipcMain.handle('hw:raw', async (_, hex) => {
+  try { return { ok: true, data: await hw.raw(hex) }; }
+  catch (e) { return { ok: false, error: String(e.message || e) }; }
+});
+
+ipcMain.handle('hw:profile', async (_, name) => {
+  try { return { ok: true, data: await hw.applyProfile(name) }; }
+  catch (e) { return { ok: false, error: String(e.message || e) }; }
+});
+
+// Tam profil: WMI mod + performance-mode + turbo + Windows güç planı + doğrulama
+ipcMain.handle('hw:applyFull', async (_, name, opts) => {
+  try {
+    if (process.platform !== 'win32') return { ok: false, error: 'Bu özellik yalnızca Windows içindir' };
+    return await hw.applyFull(name, opts || {});
+  } catch (e) {
+    return { ok: false, error: String(e.message || e) };
+  }
+});
+
+// ---- ses surucusu asamasi (yalnizca Windows) ----
+ipcMain.handle('audio:run', async () => {
+  if (process.platform !== 'win32') return { ok: false, error: 'Ses guncellemesi yalnizca Windows icin' };
+  const script = path.join(require('os').homedir(), 'huawei-re', 'AudioDriverStage.ps1');
+  if (!require('fs').existsSync(script)) {
+    return { ok: false, error: 'AudioDriverStage.ps1 bulunamadi: ' + script };
+  }
+  return new Promise((resolve) => {
+    const ps = `Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File','${script.replace(/'/g, "''")}'`;
+    execFile('powershell.exe', ['-NoProfile', '-Command', ps], (err) => {
+      if (err) resolve({ ok: false, error: String(err.message) });
+      else resolve({ ok: true, message: 'Ses surucusu asamasi yonetici olarak baslatildi. Geri yukleme noktasi olusturulacak.' });
+    });
+  });
+});
+
+ipcMain.handle('audio:reveal', async () => {
+  const dir = path.join(require('os').homedir(), 'huawei-re');
+  const script = path.join(dir, 'AudioDriverStage.ps1');
+  if (require('fs').existsSync(script)) shell.showItemInFolder(script);
+  else shell.openPath(dir);
+  return { ok: true };
+});
+
+// ---- yönetici olarak yeniden başlat (Windows: UAC, Linux: pkexec) ----
+ipcMain.handle('app:relaunchAdmin', async () => {
+  if (process.platform === 'win32') {
+    return new Promise((resolve) => {
+      const exe = process.execPath;
+      const args = process.argv.slice(1).filter((a) => !a.startsWith('--') && !a.startsWith('MB_'));
+      const argPart = args.length
+        ? ' -ArgumentList ' + args.map((a) => `'${a.replace(/'/g, "''")}'`).join(',')
+        : '';
+      const ps = `Start-Process -FilePath '${exe.replace(/'/g, "''")}'${argPart} -Verb RunAs`;
+      execFile('powershell.exe', ['-NoProfile', '-Command', ps], (err) => {
+        if (!err) { app.quit(); resolve({ ok: true }); }
+        else resolve({ ok: false, error: String(err.message) });
+      });
+    });
+  }
+
+  // Linux: pkexec ile root olarak yeniden başlat (sandbox kapatılır)
+  const fs = require('fs');
+  const pkexec = ['/usr/bin/pkexec', '/usr/local/bin/pkexec'].find((p) => fs.existsSync(p));
+  if (!pkexec) return { ok: false, error: 'pkexec bulunamadı (polkit kurun)' };
+  return new Promise((resolve) => {
+    const args = process.argv.slice(1).filter((a) => !a.startsWith('--')).concat(['--no-sandbox']);
+    execFile(pkexec, [process.execPath, ...args], (err) => {
+      if (!err) { app.quit(); resolve({ ok: true }); }
+      else resolve({ ok: false, error: String(err.message) });
+    });
+  });
+});

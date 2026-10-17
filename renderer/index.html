@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:;" />
+  <!-- Eser sahibi: Alican Tutu — bu proje Alican Tutu'ya aittir. -->
+  <meta name="author" content="Alican Tutu" />
+  <meta name="owner" content="Alican Tutu" />
+  <meta name="project" content="MateBook Kontrol by Alican Tutu" />
+  <title>MateBook Kontrol</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Başlık çubuğu -->
+  <div id="titlebar">
+    <div class="tb-brand">
+      <span class="tb-diamond"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l7.5 9.5L12 21.5 4.5 12z"/></svg></span>
+      <span class="tb-title">MateBook <b>Kontrol</b></span>
+    </div>
+    <div class="tb-drag"></div>
+    <div class="tb-actions">
+      <button class="tb-btn" id="btn-min" title="Küçült"><svg viewBox="0 0 12 12"><rect x="2" y="5.5" width="8" height="1"/></svg></button>
+      <button class="tb-btn" id="btn-max" title="Büyüt"><svg viewBox="0 0 12 12"><rect x="2.5" y="2.5" width="7" height="7" fill="none" stroke="currentColor"/></svg></button>
+      <button class="tb-btn tb-close" id="btn-close" title="Kapat"><svg viewBox="0 0 12 12"><path d="M2.5 2.5 L9.5 9.5 M9.5 2.5 L2.5 9.5" stroke="currentColor" fill="none"/></svg></button>
+    </div>
+  </div>
+
+  <div id="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3l6.5 9L12 21 5.5 12z"/></svg></div>
+        <div class="logo-text">
+          <div class="logo-title">MateBook</div>
+          <div class="logo-sub">Kontrol</div>
+        </div>
+      </div>
+
+      <nav>
+        <button class="nav-item active" data-tab="main"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a8 8 0 0 1 16 0"/><path d="M12 15l3.5-3.5"/></svg></span><span>Kontrol</span></button>
+        <button class="nav-item" data-tab="settings"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h9M17 8h3M4 16h3M11 16h9"/><circle cx="15" cy="8" r="2"/><circle cx="9" cy="16" r="2"/></svg></span><span>Ayarlar</span></button>
+      </nav>
+
+      <div class="side-foot">
+        <div class="pill-platform" id="platform-pill">—</div>
+        <div class="ver">v2.2</div>
+      </div>
+      <div class="credit">✦ <b>Alican Tutu</b></div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div class="chip" id="chip-mode"><label>Mod</label><b>—</b></div>
+        <div class="chip" id="chip-power"><span class="dot" id="power-dot"></span><label>Güç</label><b>—</b></div>
+        <div class="chip" id="chip-fan"><label>Fan</label><b>—</b></div>
+        <div class="chip" id="chip-temp"><label>Isı</label><b>—</b></div>
+        <div class="chip" id="chip-cpu"><label>CPU</label><b>—</b></div>
+        <div class="chip" id="chip-batt"><label>Pil</label><b>—</b></div>
+        <div class="grow"></div>
+        <div class="status-led" id="conn-led" title="Bağlantı durumu"></div>
+      </header>
+
+      <section id="content">
+        <!-- ============ KONTROL ============ -->
+        <div class="pane active" data-pane="main">
+          <div class="page-head">
+            <h1>Kontrol</h1>
+            <div class="hero-badge" id="ac-badge">—</div>
+          </div>
+
+          <div class="grid">
+            <div class="card stat"><div class="stat-label">Çalışma Modu</div><div class="stat-value" id="s-mode">—</div><div class="stat-hint">BIOS / EC profili</div></div>
+            <div class="card stat"><div class="stat-label">İşlemci</div><div class="stat-value" id="s-cpu">—<span class="unit">MHz</span></div><div class="stat-hint" id="s-cpu-hint">yük —</div></div>
+            <div class="card stat"><div class="stat-label">Fan</div><div class="stat-value" id="s-fan">—<span class="unit">rpm</span></div><div class="stat-hint" id="s-fan-hint">anlık</div></div>
+            <div class="card stat"><div class="stat-label">Sıcaklık</div><div class="stat-value" id="s-temp">—<span class="unit">°C</span></div><div class="stat-hint" id="s-temp-hint">sensör</div></div>
+            <div class="card stat"><div class="stat-label">Pil</div><div class="stat-value" id="s-batt">—<span class="unit">%</span></div><div class="stat-hint" id="s-charge">—</div></div>
+            <div class="card stat"><div class="stat-label">Güç Kaynağı</div><div class="stat-value small-val" id="s-ac">—</div><div class="stat-hint" id="s-plan">plan: —</div></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <h2>Çalışma Modu</h2>
+              <label class="switch small"><input type="checkbox" id="force-dc" /><span class="slider"></span><span>Pilde de zorla</span></label>
+            </div>
+            <div class="mode-row">
+              <button class="mode-btn" data-quick="eco"><span class="m-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4C9.5 4 5 9 5 14c0 3.5 2.5 6 6 6 5 0 9-5 9-16z"/><path d="M5 20c3-6 7-9.5 13-13"/></svg></span><b>Enerji</b><small>sessiz & serin</small></button>
+              <button class="mode-btn" data-quick="balanced"><span class="m-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a8 8 0 0 1 16 0"/><path d="M12 15l3.5-3.5"/></svg></span><b>Dengeli</b><small>günlük</small></button>
+              <button class="mode-btn" data-quick="perf"><span class="m-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2.5 5.5 13H11l-1 8.5L17.5 11H12z"/></svg></span><b>Performans</b><small>tam güç</small></button>
+            </div>
+            <p class="muted small" style="margin-top:14px">Performans: BIOS modu + Performance-Mode + Turbo + "Ultimate Performance" planı birlikte uygulanır. Huawei yüksek gücü normalde yalnızca prizde açar; "Pilde de zorla" o kapıyı atlar.</p>
+          </div>
+
+          <div class="card verify-card">
+            <div class="card-head"><h2>Son İşlem</h2><span class="tag" id="verify-tag">bekliyor</span></div>
+            <pre class="raw-out" id="verify-out">Henüz işlem yapılmadı.</pre>
+          </div>
+        </div>
+
+        <!-- ============ AYARLAR ============ -->
+        <div class="pane" data-pane="settings">
+          <div class="page-head"><h1>Ayarlar</h1></div>
+
+          <div class="section-title">Şarj</div>
+          <div class="card">
+            <div class="card-head"><h2>Akıllı Şarj</h2><button class="btn primary" id="chg-smart">Aç</button></div>
+            <p class="muted small">Pili %65–70 aralığında tutar; gün boyu prize takılı kullanımda ömrü uzatır.</p>
+          </div>
+          <div class="card">
+            <h2>Şarj Sınırı</h2>
+            <p class="muted small">Pil şarjını seçtiğin yüzdede durdurur.</p>
+            <div class="limit-grid" id="limit-grid"></div>
+            <pre class="raw-out" id="chg-status">—</pre>
+          </div>
+
+          <div class="section-title">Fan & Isı</div>
+          <div class="card">
+            <div class="fan-head">
+              <div><span class="stat-label">Fan 1</span><div class="stat-value small-val" id="f-fan0">—<span class="unit">rpm</span></div></div>
+              <div><span class="stat-label">Fan 2</span><div class="stat-value small-val" id="f-fan1">—<span class="unit">rpm</span></div></div>
+            </div>
+            <div class="sensor-row" id="sensor-row">—</div>
+            <div class="btn-row">
+              <button class="btn" id="fan-force-on">Fanı Yükselt</button>
+              <button class="btn ghost" id="fan-force-off">Normale Dön</button>
+            </div>
+          </div>
+          <div class="card warn-card win-only">
+            <h2>Isı Politikası (deneysel)</h2>
+            <p class="muted small">Donanımın ısı politikası baytı (03 18). Etkisi modele göre değişir.</p>
+            <div class="btn-row">
+              <input type="number" id="therm-val" min="0" max="255" value="0" class="num" />
+              <button class="btn ghost" id="therm-apply">Uygula</button>
+            </div>
+          </div>
+
+          <div class="section-title">Performans</div>
+          <div class="card">
+            <label class="switch"><input type="checkbox" id="perf-turbo" /><span class="slider"></span><span>Turbo modu (anında)</span></label>
+            <label class="switch"><input type="checkbox" id="force-dc-2" /><span class="slider"></span><span>Pil modunda da zorla</span></label>
+          </div>
+          <div class="card">
+            <label class="switch"><input type="checkbox" id="acdc-watch" /><span class="slider"></span><span>Priz/pil değişiminde son modu yeniden uygula</span></label>
+          </div>
+
+          <div class="section-title win-only">Gelişmiş</div>
+          <div class="card win-only">
+            <h2>Performance-Mode (04 13)</h2>
+            <div class="btn-row">
+              <select id="perfval" class="num wide">
+                <option value="0">0 — Varsayılan</option>
+                <option value="1">1 — Performans</option>
+                <option value="2">2 — Yüksek</option>
+              </select>
+              <button class="btn ghost" id="perf-apply">Uygula</button>
+            </div>
+          </div>
+          <div class="card win-only">
+            <h2>Start Boost (04 16) · SoC (03 0e)</h2>
+            <div class="btn-row">
+              <input type="number" id="boost-val" min="0" max="255" value="0" class="num" />
+              <button class="btn ghost" id="boost-apply">Boost Uygula</button>
+              <button class="btn ghost" id="soc-read">SoC Oku</button>
+            </div>
+          </div>
+          <div class="card win-only">
+            <h2>Ham Komut</h2>
+            <p class="muted small">Örn: <code>02 08 00</code> fan, <code>04 10</code> mod okur.</p>
+            <div class="btn-row">
+              <input type="text" id="raw-hex" class="num wide" placeholder="04 10" />
+              <button class="btn ghost" id="raw-send">Gönder</button>
+            </div>
+            <pre class="raw-out" id="raw-out">—</pre>
+          </div>
+          <div class="card linux-only">
+            <h2>Linux tarafı</h2>
+            <ul class="mini-list">
+              <li>BIOS modu → <b>ACPI platform_profile</b></li>
+              <li>Hız → <b>cpufreq governor + EPP</b></li>
+              <li>Şarj sınırı → <b>huawei-wmi</b></li>
+              <li>Yazma izni → <b>pkexec/sudo</b></li>
+            </ul>
+          </div>
+
+          <div class="section-title win-only">Ses Sürücüsü</div>
+          <div class="card win-only">
+            <h2>Güncelleme</h2>
+            <p class="muted small">Kurulumdan önce geri yükleme noktası oluşturulur, ardından Huawei'nin resmi güncelleyicisi çalıştırılır.</p>
+            <div class="btn-row">
+              <button class="btn primary" id="audio-run">Ses Sürücüsünü Güncelle</button>
+              <button class="btn ghost" id="audio-script">Script Yolunu Aç</button>
+            </div>
+            <pre class="raw-out" id="audio-out">—</pre>
+          </div>
+        </div>
+      </section>
+
+      <footer class="logbar">
+        <span class="log-ic">▸</span>
+        <div id="log">Hazır.</div>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Gizli sahiplik filigranı: Alican Tutu -->
+  <div id="owner-watermark" class="watermark" data-owner="Alican Tutu"
+       data-signature="mbk-alican-tutu" aria-hidden="true">Alican Tutu · MateBook Kontrol</div>
+
+  <div id="admin-overlay" class="overlay hidden">
+    <div class="dialog">
+      <h2>Yönetici İzni Gerekli</h2>
+      <p class="muted">Donanım komutları (ACPI-WMI) için uygulamanın yönetici olarak çalışması gerekir.</p>
+      <div class="btn-row">
+        <button class="btn primary" id="admin-relaunch">Yönetici Olarak Yeniden Başlat</button>
+        <button class="btn ghost" id="admin-skip">Şimdilik Atla</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
