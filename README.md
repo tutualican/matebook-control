@@ -2,7 +2,7 @@
 
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-blue)](#)
 [![Electron](https://img.shields.io/badge/Electron-44-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](#contributing)
 
 An open-source control center for **Huawei MateBook** laptops that works **without
@@ -181,7 +181,12 @@ Use it only on hardware you own, start with read-only checks, and keep backups.
 
 ## License
 
-[MIT](LICENSE) © Alican Tutu.
+[Apache License 2.0](LICENSE) © Alican Tutu.
+
+Anyone is free to **use, modify, sell and even embed** this project in a closed
+product — but the [`NOTICE`](NOTICE) file, the copyright notice and the license
+must be kept, and any changes must be stated. So the original work stays
+credited and cannot be passed off as someone else's.
 
 This is an unofficial project and is **not affiliated with Huawei**. "Huawei" and
 "MateBook" are trademarks of Huawei Technologies Co., Ltd. Reverse engineering was
