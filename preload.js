@@ -34,4 +34,7 @@ contextBridge.exposeInMainWorld('mb', {
     maximize: () => ipcRenderer.invoke('win:maximize'),
     close: () => ipcRenderer.invoke('win:close'),
   },
+
+  // Global kisayol (Ctrl+Alt+Q) tetiklendiginde cagrilir.
+  onHotkeyCycle: (cb) => { try { ipcRenderer.on('hotkey:cycle', () => cb()); } catch {} },
 });

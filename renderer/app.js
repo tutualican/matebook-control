@@ -240,6 +240,21 @@ async function applyFull(name, btn) {
 $$('.big-apply').forEach((b) => b.addEventListener('click', () => applyFull(b.dataset.apply, b)));
 $$('.mode-btn').forEach((b) => b.addEventListener('click', () => applyFull(b.dataset.quick, null)));
 
+// ---------------- Global kısayol: Ctrl+Alt+Q ile mod döngüsü ----------------
+// Dengeli → Performans → Enerji → (başa döner). OSD kartı ve doğrulama için mevcut applyFull kullanılır.
+const CYCLE_ORDER = ['balanced', 'perf', 'eco']; // 0=Dengeli, 1=Performans, 2=Enerji
+async function hotkeyCycle() {
+  if (applying) return;
+  let idx = currentMode;
+  if (idx === null || idx === undefined) {
+    idx = (lastStatus && typeof lastStatus.mode === 'number') ? lastStatus.mode : -1;
+  }
+  const next = (((idx + 1) % 3) + 3) % 3;
+  log('Kısayol Ctrl+Alt+Q → ' + MODE_NAMES[next]);
+  await applyFull(CYCLE_ORDER[next], null);
+}
+if (window.mb.onHotkeyCycle) window.mb.onHotkeyCycle(hotkeyCycle);
+
 // ---------------- Turbo ----------------
 $('#perf-turbo').addEventListener('change', async (e) => {
   const on = e.target.checked;
@@ -340,6 +355,7 @@ async function boot() {
   const env = await window.mb.env();
   ENV = env;
   document.body.classList.toggle('is-linux', !env.isWindows);
+  document.body.dataset.hwosd = String(!!env.hwOsd);
   $('#platform-pill').textContent = env.isWindows ? 'WINDOWS' : 'LINUX';
   log('Platform: ' + env.platform + ' • ' + env.arch);
 

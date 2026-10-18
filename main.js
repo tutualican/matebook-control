@@ -2,10 +2,10 @@
 // MateBook Kontrol — eser sahibi: Alican Tutu  (mbk-alican-tutu)
 // Bu proje Alican Tutu'ya aittir.
 // ════════════════════════════════════════════════════════════
-const { app, BrowserWindow, ipcMain, shell, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, screen, globalShortcut } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { execFile } = require('child_process');
+const { execFile, execSync } = require('child_process');
 
 const hw = process.platform === 'win32'
   ? require('./hw_win')
@@ -35,7 +35,7 @@ function createWindow() {
       setTimeout(async () => {
         try {
           const info = await win.webContents.executeJavaScript(
-            "document.getElementById('platform-pill').textContent + ' || LOG: ' + document.getElementById('log').textContent + ' || nav=' + document.querySelectorAll('.nav-item').length");
+            "document.getElementById('platform-pill').textContent + ' || hwOsd=' + document.body.dataset.hwosd + ' || LOG: ' + document.getElementById('log').textContent + ' || nav=' + document.querySelectorAll('.nav-item').length");
           console.log('SMOKE OK ' + info);
         } catch (e) { console.log('SMOKE ERR ' + e.message); }
         app.quit();
@@ -62,9 +62,29 @@ const HWOSD_PATHS = [
   'C:\\Program Files\\Huawei\\Huawei OSD\\OSD_Daemon.exe',
   'C:\\Program Files (x86)\\Huawei\\Huawei OSD\\OSD_Daemon.exe',
 ];
-function hasHuaweiOsd() {
+function hwOsdInstalled() {
   if (process.platform !== 'win32') return false;
   return HWOSD_PATHS.some((p) => { try { return fs.existsSync(p); } catch { return false; } });
+}
+// HW OSD sürecinin/servisinin GERÇEKTEN çalışıp çalışmadığı. Kurulu ama durdurulmuşsa bizim kartımız devreye girer.
+function hwOsdRunning() {
+  try {
+    const out = execSync('tasklist /FI "IMAGENAME eq OSD_Daemon.exe" /NH', { encoding: 'latin1', timeout: 4000, stdio: ['ignore', 'pipe', 'ignore'] });
+    if (/osd_daemon\.exe/i.test(out)) return true;
+  } catch {}
+  try {
+    const out2 = execSync('sc query HW_OSDServer', { encoding: 'latin1', timeout: 4000, stdio: ['ignore', 'pipe', 'ignore'] });
+    if (/RUNNING/i.test(out2)) return true;
+  } catch {}
+  return false;
+}
+// Kartı biz mi göstereceğiz? Yalnızca HW OSD yoksa VEYA kullanıcı zorladıysa (MB_NO_HWOSD=1).
+// Böylece uygulama HW OSD'den tamamen bağımsız çalışır: HW OSD yok/durmuşsa kendi kartımız çıkar.
+function hasHuaweiOsd() {
+  if (process.platform !== 'win32') return false;
+  if (process.env.MB_NO_HWOSD === '1') return false;
+  if (!hwOsdInstalled()) return false;
+  return hwOsdRunning();
 }
 
 // Packaged uygulamada scripts/ app.asar ICINDE olamaz (PowerShell calistiramaz).
@@ -117,11 +137,26 @@ function showOsd(payload = {}) {
   osdTimer = setTimeout(() => { if (osdWin && !osdWin.isDestroyed()) { try { osdWin.hide(); } catch {} } }, 2800);
 }
 
+// ────────────────────────────────────────────────────────────
+// Global kisayol: Ctrl+Alt+Q ile mod dongusu (Dengeli -> Performans -> Enerji)
+// ────────────────────────────────────────────────────────────
+// OS kabuk eylemi olmayan, olcumde bos cikan bir kombinasyon secildi (bkz. CHANGELOG).
+const HOTKEY = 'Control+Alt+Q';
+
 app.whenReady().then(() => {
   createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+  // Renderer'a haber ver; mod degisimini + OSD kartini renderer'daki applyFull yonetir.
+  const ok = globalShortcut.register(HOTKEY, () => {
+    if (win && !win.isDestroyed()) win.webContents.send('hotkey:cycle');
+  });
+  if (!ok) console.log('HOTKEY: ' + HOTKEY + ' kaydedilemedi (baska uygulama tutuyor olabilir)');
+});
+
+app.on('will-quit', () => {
+  try { globalShortcut.unregisterAll(); } catch {}
 });
 
 app.on('window-all-closed', () => {
@@ -228,9 +263,9 @@ ipcMain.handle('hw:profile', async (_, name) => {
 });
 
 // Tam profil: WMI mod + performance-mode + turbo + Windows güç planı + doğrulama
+// (Linux'ta hw_linux.applyFull: platform_profile + CPU governor/EPP + doğrulama)
 ipcMain.handle('hw:applyFull', async (_, name, opts) => {
   try {
-    if (process.platform !== 'win32') return { ok: false, error: 'Bu özellik yalnızca Windows içindir' };
     return await hw.applyFull(name, opts || {});
   } catch (e) {
     return { ok: false, error: String(e.message || e) };

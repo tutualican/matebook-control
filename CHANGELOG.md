@@ -3,6 +3,24 @@
 All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [2.0.6] — 2026
+
+### Added
+- **Global shortcut `Ctrl+Alt+Q`** — cycles the working mode (Dengeli → Performans → Enerji) and shows the
+  same info card as Huawei's Fn+P, without opening the window. The card is driven by the mode change
+  itself: verified that Huawei's HW OSD reacts to the WMI/EC change, not only to the key.
+
+### Changed
+- **Works independently of Huawei HW OSD.** Previously the app hid its own info card whenever HW OSD was
+  merely *installed*, so if that component was stopped or broken **no card appeared at all**. Detection now
+  checks whether HW OSD is actually **running** (process/service), so the app's own card takes over when it
+  isn't — and no Huawei software is required. `MB_NO_HWOSD=1` forces the app's own card even when HW OSD
+  is active.
+
+### Fixed
+- **Linux mode switching.** The `hw:applyFull` channel was blocked on non-Windows, so the mode buttons (and
+  the new shortcut) did nothing on Linux even though `hw_linux.applyFull` exists. It now runs on both.
+
 ## [2.0.5] — 2026
 
 ### Changed
