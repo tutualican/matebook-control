@@ -255,6 +255,9 @@ async function hotkeyCycle() {
 }
 if (window.mb.onHotkeyCycle) window.mb.onHotkeyCycle(hotkeyCycle);
 
+// Tepsi menüsünden belirli bir mod seçilirse (OSD kartı ve doğrulama için applyFull kullanılır).
+if (window.mb.onSetMode) window.mb.onSetMode((name) => { if (name) applyFull(name, null); });
+
 // ---------------- Turbo ----------------
 $('#perf-turbo').addEventListener('change', async (e) => {
   const on = e.target.checked;
@@ -308,6 +311,22 @@ $('#raw-send').onclick = async () => {
 
 $('#acdc-watch').checked = store.get('mb.acdcWatch', '1') === '1';
 $('#acdc-watch').addEventListener('change', (e) => store.set('mb.acdcWatch', e.target.checked ? '1' : '0'));
+
+// ---------------- Oturum açılışında başlatma ----------------
+(async function initAutostart() {
+  const el = $('#autostart');
+  if (!el) return;
+  try {
+    const r = await window.mb.autostartGet();
+    if (!r || !r.supported) { el.disabled = true; return; }
+    el.checked = !!r.enabled;
+  } catch {}
+  el.addEventListener('change', async (e) => {
+    const r = await window.mb.autostartSet(e.target.checked);
+    if (r && r.ok) { el.checked = !!r.enabled; log('Oturum açılışında başlat: ' + (r.enabled ? 'AÇIK' : 'kapalı')); }
+    else { el.checked = !e.target.checked; log('Otomatik başlatma hatası: ' + ((r && r.error) || 'bilinmiyor')); }
+  });
+})();
 
 // ---------------- Şarj ----------------
 $('#chg-smart').onclick = async () => {

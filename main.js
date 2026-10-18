@@ -2,16 +2,23 @@
 // MateBook Kontrol — eser sahibi: Alican Tutu  (mbk-alican-tutu)
 // Bu proje Alican Tutu'ya aittir.
 // ════════════════════════════════════════════════════════════
-const { app, BrowserWindow, ipcMain, shell, screen, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, screen, globalShortcut, Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { execFile, execSync } = require('child_process');
+const { execFile, execFileSync, execSync } = require('child_process');
 
 const hw = process.platform === 'win32'
   ? require('./hw_win')
   : require('./hw_linux');
 
+// Tek örnek kilidi: ikinci kopya açılırsa tepsi ikonu ve global kısayol çakışır.
+// İkinci kopya doğrudan çıkar; birincil pencereyi öne getirir.
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) app.quit();
+
 let win = null;
+let tray = null;
+let isQuitting = false;   // tepsi "Çıkış" gerçekten kapatana kadar pencere sadece gizlenir
 
 function createWindow() {
   win = new BrowserWindow({
@@ -43,8 +50,13 @@ function createWindow() {
     }
   });
   win.webContents.on('render-process-gone', (_e, d) => console.log('RENDER GONE ' + JSON.stringify(d)));
-  win.webContents.on('console-message', (e, _level, message) => {
-    console.log('RENDER LOG ' + (e && e.message !== undefined ? e.message : message));
+  win.webContents.on('console-message', (event) => {
+    const msg = (event && event.message !== undefined) ? event.message : '';
+    console.log('RENDER LOG ' + msg);
+  });
+  // Kapatma → tepsiye küçül (uygulama + global kısayol arka planda çalışmaya devam eder).
+  win.on('close', (e) => {
+    if (!isQuitting) { e.preventDefault(); try { win.hide(); } catch {} }
   });
   win.on('closed', () => {
     if (osdWin && !osdWin.isDestroyed()) { try { osdWin.destroy(); } catch {} }
@@ -138,15 +150,120 @@ function showOsd(payload = {}) {
 }
 
 // ────────────────────────────────────────────────────────────
+// Tepsi (tray) + oturum açılışında başlatma
+// ────────────────────────────────────────────────────────────
+function showWindow() {
+  if (!win || win.isDestroyed()) { createWindow(); return; }
+  try { win.show(); win.focus(); } catch {}
+}
+
+function sendSetMode(name) {
+  if (win && !win.isDestroyed()) win.webContents.send('tray:setMode', name);
+}
+
+// Otomatik başlatma hedefi: paketli (portable) sürümde asıl .exe yolu, değilse process.execPath.
+function autostartTarget() {
+  return process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
+}
+const AUTOSTART_TASK = 'MateBookKontrol';
+function autostartLinuxFile() {
+  return path.join(process.env.HOME || '', '.config', 'autostart', 'matebook-control.desktop');
+}
+function isAutostartEnabled() {
+  if (process.platform === 'win32') {
+    try { execFileSync('schtasks', ['/Query', '/TN', AUTOSTART_TASK], { timeout: 6000, stdio: 'ignore' }); return true; }
+    catch { return false; }
+  }
+  if (process.platform === 'linux') {
+    try { return fs.existsSync(autostartLinuxFile()); } catch { return false; }
+  }
+  return false;
+}
+function toggleAutostart(on) {
+  try {
+    if (process.platform === 'win32') {
+      if (on) {
+        // Yönetici olarak, UAC'siz, oturum açılışında başlat.
+        execFileSync('schtasks', ['/Create', '/TN', AUTOSTART_TASK, '/TR', '"' + autostartTarget() + '"', '/SC', 'ONLOGON', '/RL', 'HIGHEST', '/F'], { timeout: 12000, stdio: 'ignore' });
+      } else {
+        execFileSync('schtasks', ['/Delete', '/TN', AUTOSTART_TASK, '/F'], { timeout: 12000, stdio: 'ignore' });
+      }
+    } else if (process.platform === 'linux') {
+      const f = autostartLinuxFile();
+      if (on) {
+        fs.mkdirSync(path.dirname(f), { recursive: true });
+        fs.writeFileSync(f, '[Desktop Entry]\nType=Application\nName=MateBook Kontrol\nComment=Huawei MateBook control center\nExec="' + process.execPath + '"\nX-GNOME-Autostart-enabled=true\nTerminal=false\n');
+      } else {
+        try { fs.unlinkSync(f); } catch {}
+      }
+    } else {
+      return { ok: false, error: 'Bu platformda desteklenmiyor', enabled: false };
+    }
+    return { ok: true, enabled: isAutostartEnabled() };
+  } catch (e) {
+    const raw = String((e && e.stderr && e.stderr.toString()) || (e && e.message) || e);
+    const friendly = /erişim engellendi|access is denied|erisim engellendi/i.test(raw)
+      ? 'Yönetici izni gerekli. Uygulamayı yönetici olarak çalıştırın ("Yönetici olarak yeniden başlat").'
+      : raw;
+    return { ok: false, error: friendly, enabled: isAutostartEnabled() };
+  }
+}
+
+function rebuildTrayMenu() {
+  if (!tray) return;
+  const items = [
+    { label: 'Pencereyi Aç', click: showWindow },
+    { type: 'separator' },
+    { label: 'Çalışma Modu', enabled: false },
+    { label: 'Dengeli', click: () => sendSetMode('balanced') },
+    { label: 'Performans', click: () => sendSetMode('perf') },
+    { label: 'Enerji Tasarrufu', click: () => sendSetMode('eco') },
+    { type: 'separator' },
+  ];
+  if (process.platform === 'win32' || process.platform === 'linux') {
+    items.push({
+      label: 'Oturum açılışında başlat (yönetici)',
+      type: 'checkbox',
+      checked: isAutostartEnabled(),
+      click: (mi) => {
+        const r = toggleAutostart(mi.checked);
+        if (!r.ok) console.log('AUTOSTART ERR ' + r.error);
+        rebuildTrayMenu();
+      },
+    });
+  }
+  items.push({ label: 'Kısayol: Ctrl+Alt+Q', enabled: false });
+  items.push({ type: 'separator' });
+  items.push({ label: 'Çıkış', click: () => { isQuitting = true; app.quit(); } });
+  tray.setContextMenu(Menu.buildFromTemplate(items));
+}
+
+function createTray() {
+  if (tray) return;
+  let img = nativeImage.createFromPath(path.join(__dirname, 'renderer', 'tray.png'));
+  if (img.isEmpty()) img = nativeImage.createFromPath(path.join(__dirname, 'renderer', 'tray@2x.png'));
+  try {
+    tray = new Tray(img);
+  } catch (e) { console.log('TRAY ERR ' + e.message); return; }
+  tray.setToolTip('MateBook Kontrol — Ctrl+Alt+Q ile mod değiştir');
+  rebuildTrayMenu();
+  tray.on('click', showWindow);
+  tray.on('double-click', showWindow);
+}
+
+// ────────────────────────────────────────────────────────────
 // Global kisayol: Ctrl+Alt+Q ile mod dongusu (Dengeli -> Performans -> Enerji)
 // ────────────────────────────────────────────────────────────
 // OS kabuk eylemi olmayan, olcumde bos cikan bir kombinasyon secildi (bkz. CHANGELOG).
 const HOTKEY = 'Control+Alt+Q';
 
 app.whenReady().then(() => {
+  if (!gotTheLock) return;
   createWindow();
+  createTray();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    else showWindow();
   });
   // Renderer'a haber ver; mod degisimini + OSD kartini renderer'daki applyFull yonetir.
   const ok = globalShortcut.register(HOTKEY, () => {
@@ -155,12 +272,19 @@ app.whenReady().then(() => {
   if (!ok) console.log('HOTKEY: ' + HOTKEY + ' kaydedilemedi (baska uygulama tutuyor olabilir)');
 });
 
+app.on('before-quit', () => { isQuitting = true; });
+
+// İkinci kopya açılmaya çalışılırsa mevcut pencereyi öne getir.
+app.on('second-instance', () => { showWindow(); });
+
 app.on('will-quit', () => {
   try { globalShortcut.unregisterAll(); } catch {}
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  // Tepsi modu: pencere kapansa da uygulama arka planda (kisayol icin) calismaya devam eder.
+  if (process.platform === 'darwin') return;
+  // Gercek cikis tepsideki "Cikis" veya before-quit ile yapilir.
 });
 
 // ---- pencere kontrolleri ----
@@ -170,6 +294,15 @@ ipcMain.handle('win:maximize', () => {
   if (win.isMaximized()) win.unmaximize(); else win.maximize();
 });
 ipcMain.handle('win:close', () => win && win.close());
+
+// ---- tepsi / uygulama kontrolü ----
+ipcMain.handle('app:show', () => { showWindow(); return { ok: true }; });
+ipcMain.handle('app:quit', () => { isQuitting = true; app.quit(); return { ok: true }; });
+ipcMain.handle('autostart:get', () => ({
+  supported: process.platform === 'win32' || process.platform === 'linux',
+  enabled: isAutostartEnabled(),
+}));
+ipcMain.handle('autostart:set', (_, on) => { const r = toggleAutostart(!!on); rebuildTrayMenu(); return r; });
 
 // ---- ortam bilgisi ----
 ipcMain.handle('env', () => ({

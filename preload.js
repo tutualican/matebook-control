@@ -37,4 +37,15 @@ contextBridge.exposeInMainWorld('mb', {
 
   // Global kisayol (Ctrl+Alt+Q) tetiklendiginde cagrilir.
   onHotkeyCycle: (cb) => { try { ipcRenderer.on('hotkey:cycle', () => cb()); } catch {} },
+
+  // Tepsi menusunden belirli bir mod secildiginde cagrilir (name: balanced|perf|eco).
+  onSetMode: (cb) => { try { ipcRenderer.on('tray:setMode', (_e, name) => cb(name)); } catch {} },
+
+  // Oturum acilisinda baslatma
+  autostartGet: () => ipcRenderer.invoke('autostart:get'),
+  autostartSet: (on) => ipcRenderer.invoke('autostart:set', on),
+
+  // Pencere / uygulama
+  showWindow: () => ipcRenderer.invoke('app:show'),
+  quitApp: () => ipcRenderer.invoke('app:quit'),
 });

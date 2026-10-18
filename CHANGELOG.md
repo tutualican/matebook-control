@@ -3,6 +3,20 @@
 All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [2.1.0] — 2026
+
+### Added
+- **Tray mode.** Closing the window now minimises it to the system tray instead of quitting, so the global
+  shortcut keeps working in the background. The tray menu has: *Open window*, the three work modes
+  (Balanced / Performance / Eco — each shows the same info card), the auto-start toggle and *Quit*.
+  Left-click the tray icon to reopen the window.
+- **Start at logon (Windows via Task Scheduler, Linux via XDG autostart).** On Windows the task is created
+  with **highest privileges**, so the app starts **elevated without a UAC prompt** and the shortcut works
+  immediately. Toggle from the tray menu or the app's UI (the toggle needs the app to run as administrator).
+
+### Fixed
+- Silenced the Electron 44 `console-message` deprecation warning.
+
 ## [2.0.6] — 2026
 
 ### Added
