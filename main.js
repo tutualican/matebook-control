@@ -33,6 +33,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      backgroundThrottling: false, // tepsi modunda (pencere gizli) da normal çalışsın
     },
   });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
@@ -131,8 +132,9 @@ function showOsd(payload = {}) {
   const w = ensureOsd();
   try {
     const wa = screen.getPrimaryDisplay().workAreaSize;
+    // Kendi kartımız ÜST-sağda: Huawei HW OSD kartı alt-ortada çıkar, ikisi çakışmaz (birlikte görünür).
     const W = 372, H = 104, M = 24;
-    w.setBounds({ x: wa.width - W - M, y: wa.height - H - M, width: W, height: H });
+    w.setBounds({ x: wa.width - W - M, y: M, width: W, height: H });
   } catch {}
   const data = {
     title: payload.title || '',

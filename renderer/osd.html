@@ -10,12 +10,12 @@
     display: flex; align-items: center; gap: 14px;
     padding: 16px 18px;
     border-radius: 16px;
-    background: linear-gradient(135deg, rgba(20,20,26,.97), rgba(30,30,39,.97));
-    border: 1px solid rgba(255,255,255,.10);
-    box-shadow: 0 12px 32px rgba(0,0,0,.45);
+    background: linear-gradient(135deg, rgba(18,18,24,.72), rgba(30,30,39,.66));
+    border: 1px solid rgba(255,255,255,.16);
+    box-shadow: 0 10px 26px rgba(0,0,0,.35);
     color: #f2f2f5;
     font-family: 'Segoe UI', system-ui, -apple-system, 'Inter', sans-serif;
-    opacity: 0; transform: translateY(14px) scale(.98);
+    opacity: 0; transform: translateY(-14px) scale(.98);
     transition: opacity .18s ease, transform .18s ease;
   }
   #card.show { opacity: 1; transform: translateY(0) scale(1); }
@@ -24,6 +24,7 @@
     display: grid; place-items: center;
     background: #f5a623; color: #0b0b0f;
     font-size: 23px; font-weight: 800;
+    box-shadow: 0 4px 12px rgba(0,0,0,.25);
   }
   #txt { min-width: 0; }
   #title {
@@ -31,7 +32,7 @@
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   #sub {
-    font-size: 12px; color: #a9a9b6; margin-top: 3px;
+    font-size: 12px; color: #c9c9d4; margin-top: 3px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
 </style>

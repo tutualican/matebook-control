@@ -3,6 +3,28 @@
 All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [2.1.1] — 2026
+
+### Changed
+- **The app's own info card is now always shown**, even when the Huawei HW OSD is installed and running.
+  So on machines **with** HW OSD both cards appear together — Huawei's (bottom-centre) and ours
+  (**top-right**) — while machines **without** HW OSD still get our card. A new setting
+  *“Kendi bilgi kartımı göster (HW OSD olsa bile)”* (on by default) lets you turn ours off.
+- Our card is now **semi-transparent** and slides in from the top.
+- The window keeps running normally while hidden in the tray (`backgroundThrottling: false`), so the
+  info card and mode changes still work in **tray mode**.
+- **Turbo / performance honesty:** the app now reads turbo back after setting it. On battery the EC
+  keeps turbo **off** (some Huawei models only allow turbo on AC), so the app says so instead of
+  claiming success. It also reports when the EC does not support the BIOS working-mode / performance-mode
+  commands (a status byte of `01` = unsupported) instead of pretending they applied.
+
+### Fixed
+- **Battery charge limit (65–70%) now actually works.** The *Akıllı Şarj* button used the “smart” opcode
+  (`03 15 04`), which on this EC leaves the battery **charging** up to full. Verified: only the fixed
+  threshold opcode (`03 15 01 …`, i.e. `mode=1`, lo=65/hi=70) really stops charging
+  (`Charging=False`). The button now applies the fixed 65–70 threshold (and re-enables resume charging),
+  so the battery holds between 65% and 70%.
+
 ## [2.1.0] — 2026
 
 ### Added

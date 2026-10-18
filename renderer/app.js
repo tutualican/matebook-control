@@ -23,9 +23,13 @@ let lastAc = null;          // son bilinen AC durumu
 let applying = false;
 let ENV = null;             // ortam bilgisi (hwOsd var mı vb.)
 
-// Kendi bilgi kartımız (OSD). Huawei HW OSD kuruluysa onunki kullanılır, çift kart olmaz.
+// Kendi bilgi kartımız (OSD). HW OSD kurulu OLSA BİLE gösterilir (varsayılan açık) —
+// böylece hem HW OSD olmayan makinelerde tek kart, hem de olanlarda Huawei'nin kartıyla
+// birlikte iki kart görünür (bizimki üstte, HW OSD'ninki altta çakışmaz).
+// Tepsi modunda (pencere gizli) de çalışır: renderer arka planda yaşar, IPC ile tetiklenir.
 function showCard(title, subtitle, accent, icon) {
-  if (!ENV || !ENV.isWindows || ENV.hwOsd) return;
+  if (!ENV || !ENV.isWindows) return;
+  if (store.get('mb.ownOsd', '1') !== '1') return;   // kullanıcı isterse kapatabilir
   try { window.mb.osd({ title, subtitle, accent, icon }); } catch {}
 }
 const CARD_BY_MODE = {
@@ -221,7 +225,6 @@ async function applyFull(name, btn) {
     r = { ok: false, error: String(e.message || e) };
   }
   applying = false;
-
   if (r.ok) {
     currentMode = { balanced: 0, perf: 1, eco: 2 }[name];
     store.set('mb.lastProfile', name);
@@ -311,6 +314,13 @@ $('#raw-send').onclick = async () => {
 
 $('#acdc-watch').checked = store.get('mb.acdcWatch', '1') === '1';
 $('#acdc-watch').addEventListener('change', (e) => store.set('mb.acdcWatch', e.target.checked ? '1' : '0'));
+
+// ---------------- Kendi bilgi kartı (OSD) ----------------
+$('#own-osd').checked = store.get('mb.ownOsd', '1') === '1';
+$('#own-osd').addEventListener('change', (e) => {
+  store.set('mb.ownOsd', e.target.checked ? '1' : '0');
+  if (e.target.checked) showCard('Bilgi kartı açık', 'Mod değişiminde üst-sağda görünecek', '#f5a623', '🔔');
+});
 
 // ---------------- Oturum açılışında başlatma ----------------
 (async function initAutostart() {

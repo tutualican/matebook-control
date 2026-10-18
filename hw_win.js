@@ -221,8 +221,8 @@ async function isAdmin() {
 // ---------------------------------------------------------------------------
 async function readStatus() {
   const out = {};
-  try { const r = await invoke(CMD.GET_MODE()); out.mode = r[1]; out.modeName = MODE_NAME[r[1]] || ('Mod ' + r[1]); } catch (e) { out.modeErr = String(e.message || e); }
-  try { const r = await invoke(CMD.GET_PERF()); if (r[1] === 0 && r[2] < 3) { out.perf = r[2]; out.perfName = PERF_NAME[r[2]] || String(r[2]); } } catch {}
+  try { const r = await invoke(CMD.GET_MODE()); if (r[0] === 0) { out.mode = r[1]; out.modeName = MODE_NAME[r[1]] || ('Mod ' + r[1]); } else { out.modeErr = 'desteklenmiyor'; } } catch (e) { out.modeErr = String(e.message || e); }
+  try { const r = await invoke(CMD.GET_PERF()); if (r[0] === 0 && r[1] === 0 && r[2] < 3) { out.perf = r[2]; out.perfName = PERF_NAME[r[2]] || String(r[2]); } } catch {}
   try { const r = await invoke(CMD.GET_TURBO()); out.turbo = r[1] === 1; } catch {}
   try { const r = await invoke(CMD.GET_FAN(0)); out.fan0 = r[1] | (r[2] << 8); } catch {}
   try { const r = await invoke(CMD.GET_FAN(1)); out.fan1 = r[1] | (r[2] << 8); } catch {}
@@ -300,7 +300,14 @@ module.exports = {
   async setTurbo(b) { return invoke(CMD.SET_TURBO(b)); },
   async setBoost(v) { return invoke(CMD.SET_BOOST(v)); },
   async setThermal(p) { return invoke(CMD.SET_THERM(p)); },
-  async setSmartChargeOn() { return invoke(CMD.SMART_ON()); },
+  // "Akıllı Şarj" = pili %65-70 aralığında tut.
+  // DOĞRULANDI (2026, bu cihazda): mode=4 (SMART_ON) şarjı DURDURMUYOR (Charging=True kalıyor);
+  // sabit eşik mode=1 (SET_LIMIT) şarjı gerçekten durduruyor. Bu yüzden 65-70 için SET_LIMIT(70)
+  // kullanılır (lo=65, hi=70). Alt sınıra inince şarjın yeniden başlaması için SET_RESUME(1) gönderilir.
+  async setSmartChargeOn() {
+    try { await invoke(CMD.SET_RESUME(true)); } catch {}
+    return invoke(CMD.SET_LIMIT(70));
+  },
   async setChargeLimit(c) { return invoke(CMD.SET_LIMIT(c)); },
   async setChargeThreshold(lo, hi) { return invoke(CMD.SET_THRESH(lo, hi)); },
   async setResumeCharging(b) { return invoke(CMD.SET_RESUME(b)); },
@@ -322,24 +329,36 @@ module.exports = {
     try { before = await readStatus(); } catch {}
     try { sysBefore = await systemInfo(); } catch {}
 
-    // 1) BIOS çalışma modu
+    // 1) BIOS çalışma modu (DİKKAT: bazı EC'ler bu komutu desteklemez — o zaman "desteklenmiyor" yazılır)
     try {
-      await invoke(CMD.SET_MODE(MODE_MAP[name]));
-      steps.push('BIOS çalışma modu → ' + (MODE_NAME[MODE_MAP[name]] || name));
+      const r = await invoke(CMD.SET_MODE(MODE_MAP[name]));
+      if (r[0] === 0) steps.push('BIOS çalışma modu → ' + (MODE_NAME[MODE_MAP[name]] || name));
+      else steps.push('BIOS çalışma modu: bu cihazda desteklenmiyor (yok sayıldı)');
     } catch (e) { errors.push('Çalışma modu: ' + (e.message || e)); }
 
-    // 2) Performance-Mode
+    // 2) Performance-Mode (aynı şekilde bazı EC'lerde yok)
     try {
-      await invoke(CMD.SET_PERF(PERF_MAP[name]));
-      steps.push('Performance-Mode → ' + PERF_MAP[name]);
+      const r = await invoke(CMD.SET_PERF(PERF_MAP[name]));
+      if (r[0] === 0) steps.push('Performance-Mode → ' + PERF_MAP[name]);
+      else steps.push('Performance-Mode: bu cihazda desteklenmiyor (yok sayıldı)');
     } catch (e) { errors.push('Performance-Mode: ' + (e.message || e)); }
 
-    // 3) Turbo — performans için AC'den bağımsız aç; dengeli/eko'da kapat.
-    //    NOT: Huawei HW OSD servisi turbo değişimini dinlediği için, dengeli/eko'da da
-    //    SET_TURBO gönderiyoruz; böylece "Dengeli moda geçildi" kartı da çıkar (PC Manager gibi).
+    // 3) Turbo — performans için aç; dengeli/eko'da kapat.
+    //    NOT (doğrulandı 2026): bazı EC'ler turboyu SADECE prizde açar; pilde kapalı kalır.
+    //    Bu yüzden açtıktan sonra geri-okuyup pilde uyarı veriyoruz.
     try {
-      if (name === 'perf') { await invoke(CMD.SET_TURBO(true)); steps.push('Turbo (yüksek güç) → açık' + (forceDc ? ' [pil dahil]' : '')); }
-      else { await invoke(CMD.SET_TURBO(false)); steps.push('Turbo → kapalı'); }
+      if (name === 'perf') {
+        await invoke(CMD.SET_TURBO(true));
+        await new Promise((r) => setTimeout(r, 400));
+        let turboNow = null;
+        try { const t = await invoke(CMD.GET_TURBO()); if (t[0] === 0) turboNow = t[1] === 1; } catch {}
+        const onBatt = !!(sysBefore && sysBefore.onBattery);
+        if (turboNow === true) steps.push('Turbo (yüksek güç) → açık');
+        else if (onBatt) steps.push('Turbo → pilde açılmadı (bu cihazda turbo yalnızca prizde; tam performans için fişe takın)');
+        else steps.push('Turbo → açılamadı (doğrulanamadı)');
+      } else {
+        await invoke(CMD.SET_TURBO(false)); steps.push('Turbo → kapalı');
+      }
     } catch (e) { errors.push('Turbo: ' + (e.message || e)); }
 
     // 4) Windows güç planı + işlemci ayarları
